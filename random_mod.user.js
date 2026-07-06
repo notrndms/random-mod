@@ -10,8 +10,8 @@
 // @license      MIT
 // @run-at       document-start
 // @priority     999
-// @updateURL    https://raw.githubusercontent.com/notrndms/random-mod/main/random_mod.user.js
-// @downloadURL  https://raw.githubusercontent.com/notrndms/random-mod/main/random_mod.user.js
+// @updateURL    https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/YOUR_SCRIPT_NAME.user.js
+// @downloadURL  https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/YOUR_SCRIPT_NAME.user.js
 // ==/UserScript==
 
 let clientUrl = "https://raw.githubusercontent.com/e120391sd/rmp/refs/heads/main/client.js";
