@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Hordes.io edits + Random Mod
-// @version      3.2
+// @version      3.3
 // @author       Tuna & rndms
 // @description  Hordes.io custom client with Random Mod suite integrated
 // @match        https://hordes.io/play*
