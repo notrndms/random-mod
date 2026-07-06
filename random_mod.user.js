@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Hordes.io edits + Random Mod
-// @version      3.3
+// @version      3.2
 // @author       Tuna & rndms
 // @description  Hordes.io custom client with Random Mod suite integrated
 // @match        https://hordes.io/play*
@@ -10,8 +10,8 @@
 // @license      MIT
 // @run-at       document-start
 // @priority     999
-// @updateURL    https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/YOUR_SCRIPT_NAME.user.js
-// @downloadURL  https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/YOUR_SCRIPT_NAME.user.js
+// @updateURL    https://raw.githubusercontent.com/notrndms/random-mod/main/random_mod.user.js
+// @downloadURL  https://raw.githubusercontent.com/notrndm/random-mod/main/random_mod.user.js
 // ==/UserScript==
 
 let clientUrl = "https://raw.githubusercontent.com/e120391sd/rmp/refs/heads/main/client.js";
@@ -169,7 +169,7 @@ function runRandomMod() {
 
     h += '<div class="mod-section-header">Skill Cooldown Timers</div>';
     h += '<div class="mod-row"><span class="mod-label">Lock Positions</span><button id="btn-lock-timers" class="mod-btn">DISABLED</button></div>';
-    h += '<div id="timers-config-list" style="margin-top: 6px; padding-right: 2px;"></div>';
+    h += id="timers-config-list" style="margin-top: 6px; padding-right: 2px;"></div>';
     h += '<button id="btn-add-timer" class="timer-add-btn">+ Add New Timer</button>';
     h += '<div class="mod-footer">Press SHIFT + N to hide menu</div>';
 
