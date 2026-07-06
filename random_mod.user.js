@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Hordes.io edits + Random Mod
-// @version      3.3
+// @version      3.4
 // @author       Tuna & rndms
 // @description  Hordes.io custom client with Random Mod suite integrated
 // @match        https://hordes.io/play*
@@ -16,55 +16,61 @@
 
 const clientUrl = "https://raw.githubusercontent.com/e120391sd/rmp/refs/heads/main/client.js";
 
-(async () => {
-    console.log("%c[Random Mod] Initializing custom engine...", "color: #00ff00; font-weight: bold;");
-    try {
-        // 1. Fetch original game source code
-        let html = await fetch("https://hordes.io/play").then(res => {
-            if (!res.ok) throw new Error(`Failed to fetch Hordes play page: Status ${res.status}`);
-            return res.text();
-        });
+// Prevent infinite injection loops and instantly halt vanilla script execution
+if (window.__randomModActive) {
+    console.log("[Random Mod] Already active inside this context.");
+} else {
+    window.__randomModActive = true;
+    window.stop(); // Stop the vanilla game from ever executing or contacting the server!
 
-        // 2. Locate the game's core client script tag (flexible regex matching)
-        let scriptMatch = html.match(/<script[^>]*src="[^"]*client[^"]*\.js[^"]*"[^>]*><\/script>/i) || 
-                          html.match(/<script[^>]*src="[^"]*index[^"]*\.js[^"]*"[^>]*><\/script>/i);
+    (async () => {
+        console.log("%c[Random Mod] Intercepted vanilla load. Injecting modded engine...", "color: #00ff00; font-weight: bold;");
+        try {
+            // 1. Fetch clean original game source code
+            let html = await fetch("https://hordes.io/play").then(res => {
+                if (!res.ok) throw new Error(`Play page fetch failed: Status ${res.status}`);
+                return res.text();
+            });
 
-        if (!scriptMatch) {
-            console.error("[Random Mod] CRITICAL ERROR: Could not find the main game script tag inside the HTML source!");
-            console.log("[Random Mod] Aborting modification to prevent game crash. Loading vanilla game instead.");
-            return; // Let the page load naturally if we can't find it
+            // 2. Locate the game's core client script tag safely
+            let scriptMatch = html.match(/<script[^>]*src="[^"]*client[^"]*\.js[^"]*"[^>]*><\/script>/i) || 
+                              html.match(/<script[^>]*src="[^"]*index[^"]*\.js[^"]*"[^>]*><\/script>/i);
+
+            if (!scriptMatch) {
+                throw new Error("Could not find the main game script tag inside the HTML source.");
+            }
+
+            let originalElement = scriptMatch[0];
+
+            // 3. Fetch your custom modified client code
+            let customClient = await fetch(clientUrl).then(res => {
+                if (!res.ok) throw new Error(`Custom client fetch failed: Status ${res.status}`);
+                return res.text();
+            });
+
+            unsafeWindow._script = customClient;
+
+            // 4. Swap out the original script with our custom payload setup
+            const injectionPayload = `<script>window.__randomModActive = true;</script><script>eval(_script)</script><script>(${runRandomMod.toString()})();</script>`;
+            html = html.replace(originalElement, injectionPayload);
+
+            // 5. Safely recreate the document with your mod elements running fresh
+            document.open();
+            document.write(html);
+            document.close();
+
+            unsafeWindow.document.dispatchEvent(new Event("DOMContentLoaded", {
+                bubbles: true,
+                cancelable: false
+            }));
+            console.log("%c[Random Mod] Modified environment successfully mounted!", "color: #00ff00; font-weight: bold;");
+
+        } catch (error) {
+            console.error("[Random Mod] Setup encountered a critical exception:", error);
+            alert("Random Mod failed to load. Please check your browser console (F12) for details.");
         }
-
-        let originalElement = scriptMatch[0];
-        console.log(`[Random Mod] Successfully located game script target: ${originalElement}`);
-
-        // 3. Fetch your custom modified client code
-        let customClient = await fetch(clientUrl).then(res => {
-            if (!res.ok) throw new Error(`Failed to fetch custom client from GitHub: Status ${res.status}`);
-            return res.text();
-        });
-
-        unsafeWindow._script = customClient;
-
-        // 4. Swap out the original script with the new mod loader
-        const injectionPayload = `<script>eval(_script)</script><script>(${runRandomMod.toString()})();</script>`;
-        html = html.replace(originalElement, injectionPayload);
-
-        // 5. Only clear and overwrite the document now that everything is ready
-        document.open();
-        document.write(html);
-        document.close();
-
-        unsafeWindow.document.dispatchEvent(new Event("DOMContentLoaded", {
-            bubbles: true,
-            cancelable: false
-        }));
-        console.log("%c[Random Mod] Engine successfully injected!", "color: #00ff00; font-weight: bold;");
-
-    } catch (error) {
-        console.error("[Random Mod] Setup encountered a critical exception:", error);
-    }
-})();
+    })();
+}
 
 // =========================================================================
 // RANDOM MOD SUITE ENGINE
