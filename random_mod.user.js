@@ -1,17 +1,53 @@
 // ==UserScript==
-// @name         Random Mod
+// @name         Hordes.io edits + Random Mod
+// @version      3.1
+// @author       Tuna & rndms
+// @description  Hordes.io custom client with Random Mod suite integrated
 // @match        https://hordes.io/play*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=hordes.io
-// @version      10.21
-// @description  All-In-One Mod Suite: Fullscreen, Black Borders, HUD Elements, Custom Timers, Black/White Menu Layout, PvP Kill Message Streamliner, Own Buffs Toggler.
-// @author       rndms
-// @grant        none
-// @run-at       document-end
+// @grant        unsafeWindow
+// @grant        GM_addStyle
+// @license      MIT
+// @run-at       document-start
+// @priority     999
 // @updateURL    https://raw.githubusercontent.com/notrndms/random-mod/main/random_mod.user.js
 // @downloadURL  https://raw.githubusercontent.com/notrndms/random-mod/main/random_mod.user.js
 // ==/UserScript==
 
-(function() {
+let clientUrl = "https://raw.githubusercontent.com/e120391sd/rmp/refs/heads/main/client.js";
+
+document.write('<!DOCTYPE html><html><head></head><body></body></html>');
+unsafeWindow._script = "";
+
+(async() => {
+    try {
+        let html = await fetch("https://hordes.io/play").then(i => i.text());
+        let element = html.match(/<script.*?client\.js.*?><\/script>/)[0];
+        let url = element.match(/src="(.*?)"/)[1];
+        let client = await fetch(clientUrl).then(i => i.text());
+
+        unsafeWindow._script = client;
+
+        // Dynamic injection of both the custom client and the Random Mod logic
+        html = html.replace(element, `<script>eval(_script)</script><script>(${runRandomMod.toString()})();</script>`);
+
+        document.open();
+        document.write(html);
+        document.close();
+
+        unsafeWindow.document.dispatchEvent(new Event("DOMContentLoaded", {
+          bubbles: true,
+          cancelable: false
+        }));
+    } catch (e) {
+        console.error(e);
+    }
+})();
+
+// =========================================================================
+// RANDOM MOD SUITE ENGINE
+// =========================================================================
+function runRandomMod() {
     'use strict';
 
     // ==========================================
@@ -117,7 +153,6 @@
     // 2. CREATE PANEL HTML LAYOUT
     // ==========================================
     var menu = document.createElement('div');
-    var menu = document.createElement('div');
     menu.id = 'mod-menu-container';
 
     var h = '<div class="mod-menu-title">Random Mods</div>';
@@ -177,7 +212,6 @@
         }
     }
 
-    // Natively synchronize state with settings layout
     function checkAndSyncBuffs() {
         const nativeState = localStorage.getItem("buffsHideIrrelevant") === "true";
         if (nativeState !== settings.ownBuffsOnly) {
@@ -538,11 +572,10 @@
         attributeFilter: ['class']
     });
 
-    // Verify layout status matches saved configuration on launch
     setTimeout(checkAndSyncBuffs, 500);
 
     refreshAllButtons();
     applyBlackout();
     applyKillMessageFormat();
     drawTimersHUD();
-})();
+}
