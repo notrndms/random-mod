@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Hordes.io edits + Random Mod
-// @version      3.4
+// @version      3.3
 // @author       Tuna & rndms
 // @description  Hordes.io custom client with Random Mod suite integrated
 // @match        https://hordes.io/play*
@@ -14,33 +14,55 @@
 // @downloadURL  https://raw.githubusercontent.com/notrndms/random-mod/main/random_mod.user.js
 // ==/UserScript==
 
-let clientUrl = "https://raw.githubusercontent.com/e120391sd/rmp/refs/heads/main/client.js";
+const clientUrl = "https://raw.githubusercontent.com/e120391sd/rmp/refs/heads/main/client.js";
 
-document.write('<!DOCTYPE html><html><head></head><body></body></html>');
-unsafeWindow._script = "";
-
-(async() => {
+(async () => {
+    console.log("%c[Random Mod] Initializing custom engine...", "color: #00ff00; font-weight: bold;");
     try {
-        let html = await fetch("https://hordes.io/play").then(i => i.text());
-        let element = html.match(/<script.*?client\.js.*?><\/script>/)[0];
-        let url = element.match(/src="(.*?)"/)[1];
-        let client = await fetch(clientUrl).then(i => i.text());
+        // 1. Fetch original game source code
+        let html = await fetch("https://hordes.io/play").then(res => {
+            if (!res.ok) throw new Error(`Failed to fetch Hordes play page: Status ${res.status}`);
+            return res.text();
+        });
 
-        unsafeWindow._script = client;
+        // 2. Locate the game's core client script tag (flexible regex matching)
+        let scriptMatch = html.match(/<script[^>]*src="[^"]*client[^"]*\.js[^"]*"[^>]*><\/script>/i) || 
+                          html.match(/<script[^>]*src="[^"]*index[^"]*\.js[^"]*"[^>]*><\/script>/i);
 
-        // Dynamic injection of both the custom client and the Random Mod logic
-        html = html.replace(element, `<script>eval(_script)</script><script>(${runRandomMod.toString()})();</script>`);
+        if (!scriptMatch) {
+            console.error("[Random Mod] CRITICAL ERROR: Could not find the main game script tag inside the HTML source!");
+            console.log("[Random Mod] Aborting modification to prevent game crash. Loading vanilla game instead.");
+            return; // Let the page load naturally if we can't find it
+        }
 
+        let originalElement = scriptMatch[0];
+        console.log(`[Random Mod] Successfully located game script target: ${originalElement}`);
+
+        // 3. Fetch your custom modified client code
+        let customClient = await fetch(clientUrl).then(res => {
+            if (!res.ok) throw new Error(`Failed to fetch custom client from GitHub: Status ${res.status}`);
+            return res.text();
+        });
+
+        unsafeWindow._script = customClient;
+
+        // 4. Swap out the original script with the new mod loader
+        const injectionPayload = `<script>eval(_script)</script><script>(${runRandomMod.toString()})();</script>`;
+        html = html.replace(originalElement, injectionPayload);
+
+        // 5. Only clear and overwrite the document now that everything is ready
         document.open();
         document.write(html);
         document.close();
 
         unsafeWindow.document.dispatchEvent(new Event("DOMContentLoaded", {
-          bubbles: true,
-          cancelable: false
+            bubbles: true,
+            cancelable: false
         }));
-    } catch (e) {
-        console.error(e);
+        console.log("%c[Random Mod] Engine successfully injected!", "color: #00ff00; font-weight: bold;");
+
+    } catch (error) {
+        console.error("[Random Mod] Setup encountered a critical exception:", error);
     }
 })();
 
@@ -53,7 +75,6 @@ function runRandomMod() {
     // ==========================================
     // 0. STATE MANAGEMENT & DATA STORAGE
     // ==========================================
-
     const SETTINGS_KEY = 'rndms_mod_settings_v9';
     var settings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {
         fullscreen: true,
@@ -68,7 +89,6 @@ function runRandomMod() {
     if (settings.killMsgFormat === undefined) settings.killMsgFormat = true;
     if (settings.ownBuffsOnly === undefined) settings.ownBuffsOnly = false;
 
-    // Cooldown Timer Data
     var timerData = JSON.parse(localStorage.getItem('h_timers_v65')) || [
         { id: 101, key: 'c', dur: 45, color: '#ffffff', x: 100, y: 150, size: 22, enabled: true }
     ];
@@ -95,7 +115,6 @@ function runRandomMod() {
     var classColorsStyleRule = document.createElement('style');
     var yellChatStyleRule = document.createElement('style');
 
-    // Central layout style sheet
     var s = '#mod-menu-container { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 360px; background-color: #000000 !important; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 2px solid #ffffff !important; border-radius: 6px; box-shadow: 0px 0px 15px rgba(255, 255, 255, 0.2); color: #ffffff !important; font-family: "Montserrat", sans-serif, Arial; z-index: 999999; padding: 15px; display: none; user-select: none; } ';
     s += '.mod-menu-title { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 12px; color: #ffffff; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #ffffff; padding-bottom: 5px; } ';
     s += '.mod-section-header { font-size: 11px; font-weight: bold; color: #ffffff; text-transform: uppercase; margin: 12px 0 8px 0; border-bottom: 1px dashed #4b5563; padding-bottom: 2px; letter-spacing: 0.5px; } ';
@@ -124,20 +143,17 @@ function runRandomMod() {
     uiStyle.textContent = s;
     document.head.appendChild(uiStyle);
 
-    // Black borders style sheet
     var bStr = '#skillbar { background-color: black !important; background: black !important; border-color: black !important; } ';
     bStr += '.border.slot.white, .border.slot.purp, .border.slot.grey, .border.slot.blue, .border.slot.green { border-color: black !important; box-shadow: none !important; }';
     borderStyleRule.textContent = bStr;
     document.head.appendChild(borderStyleRule);
 
-    // Crowd control indicators style sheet
     var ccStr = '.bars.svelte-g292qg:has([src*="/14."]), .bars.svelte-g292qg:has([src*="/34."]) { box-shadow: 0px 0px 0px 3px #FFFF00; } ';
     ccStr += '.bars.svelte-g292qg:has([src*="/49."]), .bars.svelte-g292qg:has([src*="/50."]) { box-shadow: 0px 0px 0px 3px #FFA500; } ';
     ccStr += '.bars.svelte-g292qg:has([src*="deepFrozen"]), .bars.svelte-g292qg:has([src*="stunBuff"]), .bars.svelte-g292qg:has([src*="/37."]) { box-shadow: 0px 0px 0px 3px #FF0000; }';
     ccStyleRule.textContent = ccStr;
     document.head.appendChild(ccStyleRule);
 
-    // Class colors health bar style sheet
     var clStr = '.grid.svelte-g292qg:has(.bgc0) .bghealth { background: linear-gradient(0deg,#C7966F 0%,#A37B5B 49%,#C7966F 50%) } ';
     clStr += '.grid.svelte-g292qg:has(.bgc1) .bghealth { background: linear-gradient(0deg,#21A9E1 0%,#1B8AB8 49%,#21A9E1 50%) } ';
     clStr += '.grid.svelte-g292qg:has(.bgc2) .bghealth { background: linear-gradient(0deg,#98CE64 0%,#6F964D 49%,#98CE64 50%) } ';
@@ -159,14 +175,12 @@ function runRandomMod() {
     h += '<div class="mod-section-header">General Utilities</div>';
     h += '<div class="mod-row"><span class="mod-label">Auto Fullscreen</span><button id="btn-fullscreen" class="mod-btn">DISABLED</button></div>';
     h += '<div class="mod-row"><span class="mod-label">Black Borders</span><button id="btn-borders" class="mod-btn">DISABLED</button></div>';
-
     h += '<div class="mod-section-header">Interface & Combat HUD</div>';
     h += '<div class="mod-row"><span class="mod-label">CC Indicator</span><button id="btn-cc" class="mod-btn">DISABLED</button></div>';
     h += '<div class="mod-row"><span class="mod-label">Class Colors</span><button id="btn-classcolors" class="mod-btn">DISABLED</button></div>';
     h += '<div class="mod-row"><span class="mod-label">Yell Chat</span><button id="btn-yell" class="mod-btn">DISABLED</button></div>';
     h += '<div class="mod-row"><span class="mod-label">Kill Msg Format</span><button id="btn-killmsg" class="mod-btn">DISABLED</button></div>';
     h += '<div class="mod-row"><span class="mod-label">Own Buffs Only</span><button id="btn-ownbuffs" class="mod-btn">DISABLED</button></div>';
-
     h += '<div class="mod-section-header">Skill Cooldown Timers</div>';
     h += '<div class="mod-row"><span class="mod-label">Lock Positions</span><button id="btn-lock-timers" class="mod-btn">DISABLED</button></div>';
     h += '<div id="timers-config-list" style="margin-top: 6px; padding-right: 2px;"></div>';
@@ -356,7 +370,6 @@ function runRandomMod() {
         });
     }
 
-    // Toggle menu visibility with Shift + N
     window.addEventListener('keydown', function(e) {
         if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) !== -1) return;
         var inputsPressed = e.key.toLowerCase();
@@ -367,7 +380,6 @@ function runRandomMod() {
         }
     });
 
-    // Control Utility Listeners
     document.getElementById('btn-fullscreen').addEventListener('click', function() {
         settings.fullscreen = !settings.fullscreen; saveSettings(); refreshAllButtons();
     });
@@ -389,7 +401,6 @@ function runRandomMod() {
     document.getElementById('btn-ownbuffs').addEventListener('click', function() {
         settings.ownBuffsOnly = !settings.ownBuffsOnly; saveSettings(); refreshAllButtons(); checkAndSyncBuffs();
     });
-
     document.getElementById('btn-lock-timers').addEventListener('click', function() {
         timerConfig.isLocked = !timerConfig.isLocked; saveTimerData(); refreshAllButtons(); drawTimersHUD();
     });
