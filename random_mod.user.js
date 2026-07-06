@@ -2,7 +2,7 @@
 // @name         Random Mod
 // @match        https://hordes.io/play*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=hordes.io
-// @version      10.20
+// @version      10.21
 // @description  All-In-One Mod Suite: Fullscreen, Black Borders, HUD Elements, Custom Timers, Black/White Menu Layout, PvP Kill Message Streamliner, Own Buffs Toggler.
 // @author       rndms
 // @grant        none
